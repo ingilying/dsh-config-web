@@ -90,19 +90,22 @@ describe('detectProfile', () => {
 })
 
 describe('resolveSourceSpec', () => {
-  const context = { cwd: '/work', packageRoot: '/work/checkout', version: '1.2.3', exists: () => true }
+  // Built through the platform's own path rules: on Windows `resolve('/work', …)`
+  // lands on the current drive, so hardcoded POSIX expectations are wrong there.
+  const cwd = resolve('/', 'work')
+  const context = { cwd, packageRoot: resolve(cwd, 'checkout'), version: '1.2.3', exists: () => true }
 
   it('links a checkout and fetches from the registry inside node_modules', () => {
-    expect(resolveSourceSpec(undefined, context)).toEqual({ spec: 'link:/work/checkout', linked: true })
-    expect(resolveSourceSpec(undefined, { ...context, packageRoot: '/cache/node_modules/dsh-config-web' }))
+    expect(resolveSourceSpec(undefined, context)).toEqual({ spec: `link:${context.packageRoot}`, linked: true })
+    expect(resolveSourceSpec(undefined, { ...context, packageRoot: resolve('/', 'cache/node_modules/dsh-config-web') }))
       .toEqual({ spec: 'dsh-config-web@1.2.3', linked: false })
   })
 
   it('anchors a named path and unpacks a tarball instead of linking it', () => {
-    expect(resolveSourceSpec('./plugin', context)).toEqual({ spec: 'link:/work/plugin', linked: true })
-    expect(resolveSourceSpec('/abs/plugin', context)).toEqual({ spec: 'link:/abs/plugin', linked: true })
+    expect(resolveSourceSpec('./plugin', context)).toEqual({ spec: `link:${resolve(cwd, 'plugin')}`, linked: true })
+    expect(resolveSourceSpec('/abs/plugin', context)).toEqual({ spec: `link:${resolve(cwd, '/abs/plugin')}`, linked: true })
     expect(resolveSourceSpec('file:./dsh-config-web-0.1.0.tgz', context))
-      .toEqual({ spec: 'file:/work/dsh-config-web-0.1.0.tgz', linked: false })
+      .toEqual({ spec: `file:${resolve(cwd, 'dsh-config-web-0.1.0.tgz')}`, linked: false })
   })
 
   it('passes registry names, git specs, and remote tarballs through verbatim', () => {

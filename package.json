@@ -42,7 +42,7 @@
     "dsh-config-web": "./bin/install.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^22.19.0 || >=24.0.0"
   },
   "packageManager": "pnpm@12.6.0",
   "publishConfig": {

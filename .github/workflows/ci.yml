@@ -21,9 +21,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # 20 is the oldest release the installer and the bundle support; 26 is
-        # the newest line the harness runs on.
-        node: ['20', '22', '24', '26']
+        # The range DeepSeek Harness itself supports; the fetch stack's undici
+        # needs a modern Web IDL implementation, so 20 cannot run these tests.
+        node: ['22', '24', '26']
         include:
           - os: macos-latest
             node: '24'
@@ -43,8 +43,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `continue-on-error` keeps the run going long enough to turn each failed
+      # test into an annotation, which is what shows up on the pull request
+      # without opening the raw log.
       - name: Run tests
-        run: pnpm test
+        id: test
+        continue-on-error: true
+        shell: bash
+        run: pnpm test 2>&1 | tee vitest.log
+
+      - name: Annotate test failures
+        if: steps.test.outcome == 'failure'
+        shell: bash
+        run: |
+          grep -E "FAIL |AssertionError|Error: |Tests +[0-9]+ failed" vitest.log | head -30 | while IFS= read -r line; do
+            echo "::error::$(printf '%s' "$line" | head -c 400)"
+          done
+
+      - name: Fail when the tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
 
       - name: Run the installer CLI
         run: |

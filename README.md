@@ -218,7 +218,7 @@ node scripts/smoke-install.mjs --source dist/*.tgz   # the tarball npm would pub
 
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
 
-- `test` — the vitest suite on Node 20, 22, 24, and 26 (Ubuntu), plus macOS and Windows on Node 24, and a smoke run of both entry points
+- `test` — the vitest suite on Node 22, 24, and 26 (Ubuntu), plus macOS and Windows on Node 24, and a smoke run of both entry points
 - `install` — the three smoke modes above, so a broken install path cannot merge
 
 The workflow takes its pnpm version from `package.json#packageManager`, and `pnpm install --frozen-lockfile` means `pnpm-lock.yaml` must stay committed.

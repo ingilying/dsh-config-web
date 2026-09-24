@@ -23,11 +23,12 @@ die() {
   exit 1
 }
 
-command -v node >/dev/null 2>&1 || die "node was not found on PATH; install Node.js 20 or newer"
+command -v node >/dev/null 2>&1 || die "node was not found on PATH; install Node.js 22.19 or newer"
 
-# Node 20 is the oldest release with a stable ESM loader and `process.exitCode` await support.
-node -e 'const major = Number(process.versions.node.split(".")[0]); process.exit(major >= 20 ? 0 : 1)' \
-  || die "Node.js 20 or newer is required (found $(node -v))"
+# The same range DeepSeek Harness itself requires: the fetch stack resolves
+# through undici, which needs a modern Web IDL implementation.
+node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major >= 24 || (major === 22 && minor >= 19) ? 0 : 1)' \
+  || die "Node.js 22.19 or newer (or 24+) is required (found $(node -v))"
 
 # Resolve the directory holding this script. When the script arrives on stdin
 # (`curl ... | bash`) there is no such directory, so fall back to npx, which

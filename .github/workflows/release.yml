@@ -1,0 +1,80 @@
+name: Release
+
+# Push a tag matching package.json's version to publish:
+#   npm version patch && git push --follow-tags
+#
+# The run can also be started by hand; the manual form defaults to a dry run
+# that builds and verifies everything without publishing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and verify without publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # create the GitHub release
+  id-token: write # npm provenance attestation
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Check the tag matches package.json
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+
+      - name: Pack the tarball
+        run: pnpm pack --pack-destination dist
+
+      - name: Install the packed tarball into a throwaway profile
+        run: node scripts/smoke-install.mjs --source dist/*.tgz
+
+      # NPM_TOKEN is a granular access token with publish rights for this
+      # package; provenance is attested through the OIDC token above.
+      - name: Publish to npm
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: pnpm publish --no-git-checks --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # The tarball is attached so it can be installed without the registry:
+      #   npx --yes <asset url> install --source <asset url>
+      - name: Create the GitHub release
+        if: github.event_name == 'push' || inputs.dry_run == false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.tgz \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag

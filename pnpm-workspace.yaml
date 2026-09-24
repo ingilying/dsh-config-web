@@ -1,0 +1,19 @@
+# pnpm reads project settings from this file. The root project is the only
+# package, and esbuild (vitest's bundler) is allowed to run its install script
+# so its native binary is placed on install.
+packages:
+  - .
+
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/dsh-brand@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-http-proxy@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-llm@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-timeout@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-typert-protocol@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-util-crypto@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-util-values@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-web-fetch-http@0.1.7-rc.1'
+  - '@deepseek-ai/dsh-web@0.1.7-rc.1'

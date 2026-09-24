@@ -1,9 +1,14 @@
 /**
  * Browser client plugin for dsh-config-web.
- * Renders the native-styled configuration card in:
- * 1. Desktop Settings > Plugins > Plugin Settings (settings.plugin.item, key: 'config-web')
- * 2. Settings > General (settings.general.item)
- * 3. Plugins page slots (plugins.item, plugins.bundle.config, plugins.row.config)
+ *
+ * The card lives on the Plugins page only, registered once per surface:
+ * 1. Settings > Plugins > Configurable (settings.plugin.item), keyed by the
+ *    `config-web` settings namespace the host registers. The slot is a keyed
+ *    child declared by `@deepseek-ai/dsh-client-ui-settings-plugins`, which
+ *    registers its own cards from the root context too — one entry per key is
+ *    what its Configurable tab dispatches.
+ * 2. Plugins page detail views (plugins.bundle.config, plugins.row.config),
+ *    keyed by package name — where a bundle's configuration belongs.
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -139,23 +144,12 @@ function NativePluginCard() {
     display: 'flex',
   }
 
+  // Plain title text: the card used to carry a green status badge beside it.
   const nameStyle: React.CSSProperties = {
     color: 'var(--dsw-alias-label-primary, #1f2328)',
     fontSize: '15px',
     fontWeight: 600,
     lineHeight: '1.4',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  }
-
-  const badgeStyle: React.CSSProperties = {
-    fontSize: '11px',
-    fontWeight: 600,
-    padding: '1px 7px',
-    borderRadius: '9px',
-    background: enabled ? 'var(--dsw-alias-state-success-primary, #16a34a)' : 'var(--dsw-alias-bg-module-platform, #eef0f4)',
-    color: enabled ? '#ffffff' : 'var(--dsw-alias-label-secondary, #6b7280)',
   }
 
   const descStyle: React.CSSProperties = {
@@ -222,12 +216,7 @@ function NativePluginCard() {
       React.createElement(
         'div',
         { style: headTextStyle },
-        React.createElement(
-          'div',
-          { style: nameStyle },
-          'Web Fetch Network Policy (网络访问策略)',
-          React.createElement('span', { style: badgeStyle }, enabled ? 'Private Access ON' : 'Public Only'),
-        ),
+        React.createElement('div', { style: nameStyle }, 'Web Fetch Network Policy (网络访问策略)'),
         React.createElement('div', { style: descStyle }, '配置网络抓取与网页访问的 IP 地址范围策略（支持本地服务与内网访问）。'),
       ),
       React.createElement('span', { style: chevronStyle }, '▼'),
@@ -258,62 +247,11 @@ function NativePluginCard() {
   )
 }
 
-/** Settings > General row component */
-function GeneralSettingsRow() {
-  const { enabled, loading, busy, toggle } = usePrivateNetworkState()
-
-  return React.createElement(
-    'div',
-    {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '24px',
-        padding: '16px 0',
-        borderBottom: '0.5px solid var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.1))',
-      },
-    },
-    React.createElement(
-      'div',
-      null,
-      React.createElement(
-        'div',
-        { style: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: 'var(--dsw-alias-label-primary, inherit)' } },
-        'Allow Private Network Access (允许私有网络访问)',
-      ),
-      React.createElement(
-        'div',
-        { style: { marginTop: '4px', color: 'var(--dsw-alias-label-secondary, #888)', fontSize: '12px', lineHeight: '18px' } },
-        'Permit web fetch tools to access loopback (127.0.0.1) and private subnets (10.x, 192.168.x, 172.16.x).',
-      ),
-    ),
-    React.createElement(NativeSwitch, {
-      checked: enabled,
-      disabled: loading || busy,
-      onChange: toggle,
-    }),
-  )
-}
-
 export function apply(ctx: Context) {
-  // 1. DSH Desktop Settings -> Plugins -> Plugin Settings (settings.plugin.item) via nested settingsScope (like dshmarket)
-  const anyCtx = ctx as any
-  if (typeof anyCtx.inject === 'function') {
-    anyCtx.inject(['settingsScope'], (scoped: any) => {
-      scoped.slots?.inject?.('settings.plugin.item', () => {
-        return scoped.slots.register(
-          {
-            name: 'settings.plugin.item',
-            key: 'config-web',
-          },
-          () => React.createElement(NativePluginCard),
-        )
-      })
-    })
-  }
-
-  // Also register directly on ctx.slots for settings.plugin.item
+  // 1. Desktop Settings > Plugins > Configurable. Registered from the root
+  // context, the same way the section package registers its own cards. This
+  // slot used to be registered a second time through a nested `settingsScope`
+  // injection as well, which made the keyed card render twice.
   ctx.slots?.inject?.('settings.plugin.item', () => {
     return ctx.slots.register(
       {
@@ -324,37 +262,7 @@ export function apply(ctx: Context) {
     )
   })
 
-  // 2. Register into Settings > General (settings.general.item)
-  ctx.slots?.inject?.('settings.general.item', () => {
-    return ctx.slots.register(
-      {
-        name: 'settings.general.item',
-        id: 'config-web-private-network',
-        order: 35,
-      },
-      () => React.createElement(GeneralSettingsRow),
-    )
-  })
-
-  // 3. Register into Plugins page item card (plugins.item)
-  ctx.slots?.inject?.('plugins.item', () => {
-    return ctx.slots.register(
-      {
-        name: 'plugins.item',
-        id: 'config-web',
-        order: 45,
-        label: () => 'Web Fetch Network Policy',
-      },
-      (props: any) => {
-        if (props.view === 'summary') {
-          return 'Configure private, local, and loopback IP network access for web fetch.'
-        }
-        return React.createElement(NativePluginCard)
-      },
-    )
-  })
-
-  // 4. Register into bundle detail page (plugins.bundle.config)
+  // 2. Register into bundle detail page (plugins.bundle.config)
   ctx.slots?.inject?.('plugins.bundle.config', () => {
     return ctx.slots.register(
       {
@@ -365,7 +273,7 @@ export function apply(ctx: Context) {
     )
   })
 
-  // 5. Register into row detail page (plugins.row.config)
+  // 3. Register into row detail page (plugins.row.config)
   ctx.slots?.inject?.('plugins.row.config', () => {
     return ctx.slots.register(
       {

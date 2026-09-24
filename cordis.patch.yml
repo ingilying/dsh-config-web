@@ -1,0 +1,11 @@
+# Mount the configurable fetch provider with private network access enabled
+- insert:
+    - id: config-web
+      name: dsh-config-web
+      config:
+        allowPrivateNetworks: true
+
+# Route web fetch requests through this provider
+- id: web
+  config:
+    fetchProvider: http-private

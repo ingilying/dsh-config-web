@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["node"],
+    "paths": {
+      "@deepseek-ai/cordis": ["../deepseek-harness/vendor/cordis/src"],
+      "@deepseek-ai/schemastery": ["../deepseek-harness/vendor/schemastery/src"],
+      "@deepseek-ai/dsh-timeout": ["../deepseek-harness/packages/util/timeout/src"],
+      "@deepseek-ai/dsh-web": ["../deepseek-harness/packages/web/web/src"],
+      "@deepseek-ai/dsh-web-fetch-http": ["../deepseek-harness/packages/web/web-fetch-http/src"]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}
